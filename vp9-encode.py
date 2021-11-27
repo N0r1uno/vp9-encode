@@ -25,11 +25,11 @@ if __name__ == '__main__':
         print("[index] language : channels : sample_fmt : sample_rate : hearing_impaired? : visual_impaired?")
         for stream in audio_streams:
             print("[%d] %s : %s : %s : %s : %s" % (
-                    stream['index'],  stream['tags'].get('language'),
-                    stream['sample_fmt'], stream['sample_rate'],
-                    stream['disposition'].get('hearing_impaired') or "?",
-                    stream['disposition'].get('visual_impaired') or "?"
-                ))
+                stream['index'], stream['tags'].get('language'),
+                stream['sample_fmt'], stream['sample_rate'],
+                stream['disposition'].get('hearing_impaired') or "?",
+                stream['disposition'].get('visual_impaired') or "?"
+            ))
         wanted_streams = input().replace(" ", "").split(",")
         if len(wanted_streams) > 0:
             selected_streams = [stream for stream in audio_streams if str(stream["index"]) in wanted_streams]
@@ -56,10 +56,16 @@ if __name__ == '__main__':
     if end != "":
         end = f"-to {end}"
 
-    print("Crop detection timestamp:")
-    crop = os.popen(
-        f"ffmpeg -ss {input()} -i {file}" + " -t 1 -vsync vfr -vf cropdetect -f null - 2>&1 | awk '/crop/ { "
-                                            "print $NF }' | tail -1").readline().removesuffix("\n")
+    crop_ok = False
+    while not crop_ok:
+        crop = input("Crop detection timestamp: (optional)\n")
+        if crop != "":
+            crop = os.popen(f"ffmpeg -ss {crop} -i {file}" + " -t 1 -vsync vfr -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1").readline().removesuffix("\n")
+            print(f"detected {crop}")
+            crop = "-vf " + crop
+            crop_ok = input("is this crop ok? (y/n): ") == "y"
+        else:
+            crop_ok = True
 
     out = input("Output file: (optional)\n")
     if out == "":
@@ -70,7 +76,7 @@ if __name__ == '__main__':
     nice = input("Niceness (19=low priority, -20=high priority):\n")
 
     print("Encoding... (1st pass)")
-    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats -vf {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate} -minrate {minrate} -maxrate {maxrate} -tile-columns {tile_columns} -g {g} -quality {quality} -crf {crf} {start} {end} -an -pass 1 -speed {speed} -f null -")
+    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate} -minrate {minrate} -maxrate {maxrate} -tile-columns {tile_columns} -g {g} -quality {quality} -crf {crf} {start} {end} -an -pass 1 -speed {speed} -f null -")
 
     print("Encoding... (2nd pass)")
-    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats -vf {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate} -minrate {minrate} -maxrate {maxrate} -tile-columns {tile_columns} -g {g} -quality {quality} -crf {crf} {start} {end} -c:a libopus {complex_filter} {metadata} -sn -pass 2 -speed {speed} -y {out}")
+    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate} -minrate {minrate} -maxrate {maxrate} -tile-columns {tile_columns} -g {g} -quality {quality} -crf {crf} {start} {end} -c:a libopus {complex_filter} {metadata} -sn -pass 2 -speed {speed} -y {out}")
