@@ -15,7 +15,7 @@ if __name__ == '__main__':
     print("Universal 1080p 24/25/30fps vp9 encoding guide")
     file = input("Video file:\n")
 
-    all_streams = json.load(os.popen(f"ffprobe -hide_banner -show_streams -print_format json {file} 2>null"))
+    all_streams = json.load(os.popen(f"ffprobe -hide_banner -show_streams -print_format json {file} 2>/dev/null"))
     audio_streams = [stream for stream in all_streams["streams"] if stream["codec_type"] == "audio"]
 
     complex_filter = ""
