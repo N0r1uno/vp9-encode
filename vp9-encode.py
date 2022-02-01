@@ -2,17 +2,20 @@ import json
 import os
 
 # libvpx-vp9 encoder params
-avgrate = "1800k"
-minrate = "900k"
-maxrate = "2800k"
-tile_columns = 2
-g = 240
-quality = "good"
-crf = 31
-speed = 4
+minrate = ["900k", "512k"]
+avgrate = ["1800k", "1024k"]
+maxrate = ["2610k", "1485k"]
+tile_columns = [2, 2]
+g = [240, 240]
+quality = ["good", "good"]
+crf = [31, 32]
+first_pass_speed = [4, 4]
+second_pass_speed = [2, 2]
 
 if __name__ == '__main__':
-    print("Universal 1080p 24/25/30fps vp9 encoding guide")
+    print("Universal 1080p/720p 24/25/30fps vp9 encoding guide\n[0] 1080p\n[1] 720p")
+    p = int(input("Choose Profile:\n"))  # todo: automated
+
     file = input("Video file:\n")
 
     all_streams = json.load(os.popen(f"ffprobe -hide_banner -show_streams -print_format json {file} 2>/dev/null"))
@@ -25,11 +28,11 @@ if __name__ == '__main__':
         print("[index] language : channels : sample_fmt : sample_rate : hearing_impaired? : visual_impaired?")
         for stream in audio_streams:
             print("[%d] %s : %s : %s : %s : %s" % (
-                stream['index'], stream['tags'].get('language'),
-                stream['sample_fmt'], stream['sample_rate'],
-                stream['disposition'].get('hearing_impaired') or "?",
-                stream['disposition'].get('visual_impaired') or "?"
-            ))
+                    stream['index'],  stream['tags'].get('language'),
+                    stream['sample_fmt'], stream['sample_rate'],
+                    stream['disposition'].get('hearing_impaired') or "?",
+                    stream['disposition'].get('visual_impaired') or "?"
+                ))
         wanted_streams = input().replace(" ", "").split(",")
         if len(wanted_streams) > 0:
             selected_streams = [stream for stream in audio_streams if str(stream["index"]) in wanted_streams]
@@ -71,12 +74,12 @@ if __name__ == '__main__':
     if out == "":
         out = os.path.splitext(file)[0] + ".webm\""
 
-    threads = input("Threads:\n")
+    threads = tile_columns * 2
 
     nice = input("Niceness (19=low priority, -20=high priority):\n")
 
     print("Encoding... (1st pass)")
-    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate} -minrate {minrate} -maxrate {maxrate} -tile-columns {tile_columns} -g {g} -quality {quality} -crf {crf} {start} {end} -an -pass 1 -speed {speed} -f null -")
+    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {tile_columns[p]} -g {g[p]} -quality {quality[p]} -speed {first_pass_speed[p]} -crf {crf[p]} {start} {end} -an -pass 1 -f null -")
 
     print("Encoding... (2nd pass)")
-    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate} -minrate {minrate} -maxrate {maxrate} -tile-columns {tile_columns} -g {g} -quality {quality} -crf {crf} {start} {end} -c:a libopus {complex_filter} {metadata} -sn -pass 2 -speed {speed} -y {out}")
+    os.system(f"nice -n {nice} ffmpeg -i {file} -loglevel error -stats {crop} -threads {threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {tile_columns[p]} -g {g[p]} -quality {quality[p]} -speed {second_pass_speed[p]} -crf {crf[p]} {start} {end} -c:a libopus {complex_filter} {metadata} -sn -pass 2 -y {out}")
