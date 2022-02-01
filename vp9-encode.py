@@ -74,7 +74,7 @@ if __name__ == '__main__':
     if out == "":
         out = os.path.splitext(file)[0] + ".webm\""
 
-    threads = tile_columns * 2
+    threads = tile_columns[p] * 2
 
     nice = input("Niceness (19=low priority, -20=high priority):\n")
 
