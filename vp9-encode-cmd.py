@@ -37,12 +37,13 @@ class Config:
         self.nice = 19
         self.crop = False
         self.multithread = False
+        self.twopass = False
         if not 1 <= len(argv):
             print_usage(1)
 
         try:
-            opts, args = getopt.getopt(argv, "i:o:l:s:e:n:cm",
-                                       ["in=", "out=", "lang=", "start=", "end=", "nice=", "crop", "multithread"])
+            opts, args = getopt.getopt(argv, "i:o:l:s:e:n:cmt",
+                                       ["in=", "out=", "lang=", "start=", "end=", "nice=", "crop", "multithread", "twopass"])
         except getopt.GetoptError:
             print_usage(1)
         for opt, arg in opts:
@@ -62,6 +63,8 @@ class Config:
                 self.crop = True
             elif opt in ("-m", "--multithread"):
                 self.multithread = True
+            elif opt in ("-t", "--twopass"):
+                self.twopass = True
 
         if self.f_in == "":
             print_usage(1)
@@ -175,10 +178,15 @@ if __name__ == "__main__":
     if conf.end != "":
         arg_end = f"-to {conf.end}"
 
-    print("> encoding... (1st pass)")
-    os.system(
-        f"nice -n {conf.nice} ffmpeg -i {conf.f_in} -loglevel error -stats {arg_crop} -threads {arg_threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {arg_tile_columns} -row-mt {arg_row_mt} -g {g[p]} -quality {quality[p]} -speed {first_pass_speed[p]} -crf {crf[p]} {arg_start} {arg_end} -an -pass 1 {conf.f_out}")
+    if conf.twopass:
+        print("> encoding... (1st pass)")
+        os.system(
+            f"nice -n {conf.nice} ffmpeg -i {conf.f_in} -loglevel error -stats {arg_crop} -threads {arg_threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {arg_tile_columns} -row-mt {arg_row_mt} -g {g[p]} -quality {quality[p]} -speed {first_pass_speed[p]} -crf {crf[p]} {arg_start} {arg_end} -an -pass 1 {conf.f_out}")
 
-    print("> encoding... (2nd pass)")
-    os.system(
-        f"nice -n {conf.nice} ffmpeg -i {conf.f_in} -loglevel error -stats {arg_crop} -threads {arg_threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {arg_tile_columns} -row-mt {arg_row_mt} -g {g[p]} -quality {quality[p]} -speed {second_pass_speed[p]} -crf {crf[p]} {arg_start} {arg_end} -c:a libopus -b:a {audiorate[p]} {arg_complex_filter} -sn -pass 2 -y {conf.f_out}")
+        print("> encoding... (2nd pass)")
+        os.system(
+            f"nice -n {conf.nice} ffmpeg -i {conf.f_in} -loglevel error -stats {arg_crop} -threads {arg_threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {arg_tile_columns} -row-mt {arg_row_mt} -g {g[p]} -quality {quality[p]} -speed {second_pass_speed[p]} -crf {crf[p]} {arg_start} {arg_end} -c:a libopus -b:a {audiorate[p]} {arg_complex_filter} -sn -pass 2 -y {conf.f_out}")
+    else:
+        print("> encoding...")
+        os.system(
+            f"nice -n {conf.nice} ffmpeg -i {conf.f_in} -loglevel error -stats {arg_crop} -threads {arg_threads} -c:v libvpx-vp9 -b:v {avgrate[p]} -minrate {minrate[p]} -maxrate {maxrate[p]} -tile-columns {arg_tile_columns} -row-mt {arg_row_mt} -g {g[p]} -quality {quality[p]} -speed {second_pass_speed[p]} -crf {crf[p]} {arg_start} {arg_end} -c:a libopus -b:a {audiorate[p]} {arg_complex_filter} -sn {conf.f_out}")
