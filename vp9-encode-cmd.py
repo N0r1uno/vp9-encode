@@ -79,7 +79,8 @@ class Config:
 class Metadata:
     def __init__(self, path):
         self.path = path
-        all_streams = json.load(os.popen(f"ffprobe -hide_banner -show_streams -print_format json {path} 2>/dev/null"))
+        with os.popen(f"ffprobe -hide_banner -show_streams -print_format json {path} 2>/dev/null") as meta_json:
+            all_streams = json.load(meta_json)
         self.audio_streams = [stream for stream in all_streams["streams"] if stream["codec_type"] == "audio"]
         video_stream = all_streams["streams"][0]
         self.codec = video_stream["codec_name"]
