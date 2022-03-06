@@ -82,7 +82,7 @@ class Metadata:
         with os.popen(f"ffprobe -hide_banner -show_streams -print_format json '{path}' 2>/dev/null") as meta_json:
             all_streams = json.load(meta_json)
         self.audio_streams = [stream for stream in all_streams["streams"] if stream["codec_type"] == "audio"]
-        video_stream = all_streams["streams"][0]
+        video_stream = [stream for stream in all_streams["streams"] if stream["codec_type"] == "video"][0]
         self.codec = video_stream["codec_name"]
         self.width = int(video_stream["width"])
         self.height = int(video_stream["height"])
