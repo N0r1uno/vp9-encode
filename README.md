@@ -24,11 +24,12 @@ Two-pass encoding? (y/n)
 > y
 Niceness (19=low priority, -20=high priority):
 > 19
---config--
+> config:
 	in:  mkv/Revenge of the Sith_t01.mkv
 	out: webm/i-have-the-high-ground.webm
 	autocrop: True
 loading metadata...
+> metadata:
 	res: 1920x1072
 	codec: h264
 	audio streams:
@@ -48,5 +49,21 @@ encoding... (2nd pass)
 
 ## Example (using vp9encode.py)
 ```
+vp9encode usage:
+
+parameters:
+-i, --in          : input file (required)
+-o, --out         : output file (.webm, optional)
+-l, --lang        : languages to include (eng,deu...; optional)
+-s, --start       : start (00:00:00, optional)
+-e, --end         : end (00:00:00, optional)
+-n, --nice        : niceness (19=low priority, -20=high priority, optional)
+
+flags:
+-c, --crop        : autocrop black borders
+-m, --multithread : enable multithreading
+-t, --twopass     : use two-pass encoding
+
+e.g.
 ./vp9encode.py -i "mkv/Revenge of the Sith_t01.mkv" -o "webm/i-have-the-high-ground.webm" -s 01:59:19 -e 01:59:28 -n 19 -c -t
 ```

@@ -22,8 +22,18 @@ p_second_pass_speed = [       2,       2,        2,      2]
 
 
 def print_usage(code):
-    print("-----vp9-encode-usage----\n")
-    # todo
+    print("vp9encode usage:\n\n"
+          "parameters:\n"
+          "-i, --in\t  : input file (required)\n"
+          "-o, --out\t  : output file (.webm, optional)\n"
+          "-l, --lang\t  : languages to include (eng,deu..., optional)\n"
+          "-s, --start\t  : start (00:00:00, optional)\n"
+          "-e, --end\t  : end (00:00:00, optional)\n"
+          "-n, --nice\t  : niceness (19=low priority, -20=high priority, optional)\n\n"
+          "flags:\n"
+          "-c, --crop\t  : autocrop black borders\n"
+          "-m, --multithread : enable multithreading\n"
+          "-t, --twopass\t  : use two-pass encoding\n")
     exit(code)
 
 
@@ -106,11 +116,11 @@ def load_metadata(f_in):
 
 
 def print_config(config):
-    print(f"--config--\n\tin:  {config.f_in}\n\tout: {config.f_out}\n\tautocrop: {config.crop}")
+    print(f"> config:\n\tin:  {config.f_in}\n\tout: {config.f_out}\n\tautocrop: {config.crop}")
 
 
 def print_metadata(meta):
-    print(f">\tres: {meta.width}x{meta.height}\n\tcodec: {meta.codec}")
+    print(f"> metadata:\n\tres: {meta.width}x{meta.height}\n\tcodec: {meta.codec}")
     print("\taudio streams:\n\t\t[index] language : sample_fmt : sample_rate : layout")
     for s in meta.audio_streams:
         print("\t\t[%d] %s : %s : %s : %s" % (
