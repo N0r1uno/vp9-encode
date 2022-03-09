@@ -30,7 +30,10 @@ def print_usage(code):
 class Config:
     def __init__(self, f_in, f_out, start, end, lang, nice, crop, multithread, twopass):
         self.f_in = f_in
-        self.f_out = f_out
+        if f_out == "":
+            self.f_out = os.path.splitext(f_in)[0] + ".webm"
+        else:
+            self.f_out = f_out
         self.start = start
         self.end = end
         self.lang = lang
@@ -107,7 +110,7 @@ def print_config(config):
 
 
 def print_metadata(meta):
-    print(f">\ttres: {meta.width}x{meta.height}\n\tcodec: {meta.codec}")
+    print(f">\tres: {meta.width}x{meta.height}\n\tcodec: {meta.codec}")
     print("\taudio streams:\n\t\t[index] language : sample_fmt : sample_rate : layout")
     for s in meta.audio_streams:
         print("\t\t[%d] %s : %s : %s : %s" % (
