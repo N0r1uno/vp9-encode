@@ -27,7 +27,13 @@ Niceness (19=low priority, -20=high priority):
 > config:
 	in:  mkv/Revenge of the Sith_t01.mkv
 	out: webm/i-have-the-high-ground.webm
+	start: 
+	end: 
+	lang: []
+	nice: 19
 	autocrop: True
+	multithread: False
+	twopass: True
 loading metadata...
 > metadata:
 	res: 1920x1072

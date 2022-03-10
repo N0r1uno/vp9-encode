@@ -116,7 +116,9 @@ def load_metadata(f_in):
 
 
 def print_config(config):
-    print(f"> config:\n\tin:  {config.f_in}\n\tout: {config.f_out}\n\tautocrop: {config.crop}")
+    print(f"> config:\n\tin:  {config.f_in}\n\tout: {config.f_out}\n\tstart: {config.start}\n\tend: {config.end}"
+          f"\n\tlang: {config.lang}\n\tnice: {config.nice}\n\tautocrop: {config.crop}"
+          f"\n\tmultithread: {config.multithread}\n\ttwopass: {config.twopass}")
 
 
 def print_metadata(meta):
