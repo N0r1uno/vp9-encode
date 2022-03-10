@@ -217,11 +217,14 @@ def encode(conf):
     base_cmd += arg_crop + arg_multithread + arg_time
 
     if conf.twopass:
+        passlogfile = os.path.splitext(conf.f_out)[0]
         print("> encoding... (1st pass)")
-        subprocess.run(base_cmd + ["-speed", str(p_first_pass_speed[p]), "-an", "-sn", "-pass", "1", conf.f_out])
+        subprocess.run(base_cmd + ["-speed", str(p_first_pass_speed[p]), "-an", "-sn", "-pass", "1",
+                                   "-passlogfile", passlogfile, "-f", "webm", "-y", "/dev/null"])
         print("> encoding... (2nd pass)")
         subprocess.run(base_cmd + ["-speed", str(p_second_pass_speed[p]), "-c:a", "libopus"]
-                       + arg_complex_filter + arg_audio_metadata + ["-sn", "-pass", "2", "-y", conf.f_out])
+                       + arg_complex_filter + arg_audio_metadata + ["-sn", "-pass", "2",
+                                                                    "-passlogfile", passlogfile, "-y", conf.f_out])
     else:
         print("> encoding...")
         subprocess.run(base_cmd + ["-speed", str(p_second_pass_speed[p]), "-c:a", "libopus"]
