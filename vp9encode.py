@@ -6,18 +6,18 @@ import subprocess
 import sys
 
 #  @formatter:off   libvpx-vp9 encoder parameters (@ 24,25,30 fps)
-# profile                  0        1        2        3
-p_width =             [    3860,    2560,    1920,    1280]
-p_height =            [    2160,    1440,    1080,     720]
-p_avgrate =           ["12000k", "6000k", "1800k", "1024k"]
-p_minrate =           [ "6000k", "3000k",  "900k",  "512k"]
-p_maxrate =           ["17400k", "8700k", "2610k", "1485k"]
-p_crf =               [      15,      24,       31,     32]
-p_quality =           [  "good",  "good",   "good", "good"]
-p_tile_columns =      [       3,       3,        2,      2]
-p_g =                 [     240,     240,      240,    240]
-p_first_pass_speed =  [       4,       4,        4,      4]
-p_second_pass_speed = [       2,       2,        2,      2]
+# profile                  0        1        2        3        4       5       6
+p_width =             [    3860,    2560,    1920,    1280,    640,    640,    320]
+p_height =            [    2160,    1440,    1080,     720,    480,    360,    240]
+p_avgrate =           ["12000k", "6000k", "1800k", "1024k", "512k", "276k", "150k"]
+p_minrate =           [ "6000k", "3000k",  "900k",  "512k", "256k", "138k",  "75k"]
+p_maxrate =           ["17400k", "8700k", "2610k", "1485k", "742k", "400k", "218k"]
+p_crf =               [      15,      24,       31,     32,     33,     36,     37]
+p_quality =           [  "good",  "good",   "good", "good", "good", "good", "good"]
+p_tile_columns =      [       3,       3,        2,      2,      1,      1,      0]
+p_g =                 [     240,     240,      240,    240,    240,    240,    240]
+p_first_pass_speed =  [       4,       4,        4,      4,      4,      4,      4]
+p_second_pass_speed = [       2,       2,        2,      2,      1,      1,      1]
 # @formatter:on
 
 
@@ -125,8 +125,12 @@ def print_metadata(meta):
     print(f"> metadata:\n\tres: {meta.width}x{meta.height}\n\tcodec: {meta.codec}")
     print("\taudio streams:\n\t\t[index] language : sample_fmt : sample_rate : layout")
     for s in meta.audio_streams:
+        if s.get("tags") is None:
+            lang = "unknown"
+        else:
+            lang = s.get("tags").get("language", "?")
         print("\t\t[%d] %s : %s : %s : %s" % (
-            s['index'], s['tags'].get('language'), s['sample_fmt'], s['sample_rate'], s['channel_layout']
+            s['index'], lang, s['sample_fmt'], s['sample_rate'], s['channel_layout']
         ))
 
 
@@ -144,7 +148,7 @@ def determine_profile_index(width, height):
 def filter_audio_streams(audio_streams, lang):
     if len(lang) == 0 or len(audio_streams) == 1:
         return audio_streams
-    filtered = [s for s in audio_streams if s["tags"].get("language") in lang]
+    filtered = [s for s in audio_streams if s.get("tags") is not None and s.get("tags").get("language") in lang]
     if len(filtered) > 0:
         return filtered
     else:
@@ -162,18 +166,22 @@ def generate_ffmpeg_complex_audio_filter(audio_streams):
 def generate_ffmpeg_audio_metadata(audio_streams):
     metadata = []
     for i, s in enumerate(audio_streams):
-        lang = str(s['tags'].get('language'))
         layout = str(s.get('channel_layout') or '').upper()
+        if s.get("tags") is None:
+            lang = title = "unknown"
+        else:
+            lang = s.get("tags").get("language")
+            title = s.get("tags").get("title") or lang.upper() + ' ' + layout
         metadata += [f"-metadata:s:a:{i}",
                      f"language=\"{lang}\"",
                      f"-metadata:s:a:{i}",
-                     f"title=\"{s['tags'].get('title') or lang.upper() + ' ' + layout}\""]
+                     f"title=\"{title}\""]
     return metadata
 
 
 def compute_crop(nice, f_in):
     crop = os.popen(
-        f"nice -n {nice} ffmpeg -ss 600 -i {f_in}" +
+        f"nice -n {nice} ffmpeg -ss 600 -i '{f_in}'" +
         " -t 120 -vsync vfr -vf cropdetect -f null - 2>&1 | awk '/crop/ { print $NF }' | tail -1") \
         .readline().removesuffix("\n")
     return crop
