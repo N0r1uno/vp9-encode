@@ -24,8 +24,8 @@ p_second_pass_speed = [       2,       2,        2,      2,      1,      1,     
 def print_usage(code):
     print("vp9encode usage:\n\n"
           "parameters:\n"
-          "-i, --in\t  : input file (required)\n"
-          "-o, --out\t  : output file (.webm, optional)\n"
+          "-i, --in\t  : input file or folder (required)\n"
+          "-o, --out\t  : output file or folder (.webm, optional)\n"
           "-l, --lang\t  : languages to include (eng,deu..., optional)\n"
           "-s, --start\t  : start (00:00:00, optional)\n"
           "-e, --end\t  : end (00:00:00, optional)\n"
@@ -33,12 +33,13 @@ def print_usage(code):
           "flags:\n"
           "-c, --crop\t  : autocrop black borders\n"
           "-m, --multithread : enable multithreading\n"
-          "-t, --twopass\t  : use two-pass encoding\n")
+          "-t, --twopass\t  : use two-pass encoding\n"
+          "-k, --skip_existing\t  : skip existing .webm files\n")
     exit(code)
 
 
 class Config:
-    def __init__(self, f_in, f_out, start, end, lang, nice, crop, multithread, twopass):
+    def __init__(self, f_in, f_out, start, end, lang, nice, crop, multithread, twopass, skip_existing):
         self.f_in = f_in
         if f_out == "":
             self.f_out = os.path.splitext(f_in)[0] + ".webm"
@@ -51,6 +52,19 @@ class Config:
         self.crop = crop
         self.multithread = multithread
         self.twopass = twopass
+        self.skip_existing = skip_existing
+
+    def __init__(self, index, parsed_args):
+        self.f_in = parsed_args[0][index]
+        self.f_out = parsed_args[1][index]
+        self.start = parsed_args[2]
+        self.end = parsed_args[3]
+        self.lang = parsed_args[4]
+        self.nice = parsed_args[5]
+        self.crop = parsed_args[6]
+        self.multithread = parsed_args[7]
+        self.twopass = parsed_args[8]
+        self.skip_existing = parsed_args[9]
 
 
 class Metadata:
@@ -61,9 +75,22 @@ class Metadata:
         self.audio_streams = audio_streams
 
 
-def load_config(argv):
-    f_in = ""
-    f_out = ""
+def auto_name(f_in):
+    name = os.path.splitext(f_in)[0] + ".webm"
+    name = os.path.basename(name).lower().replace(" ", "-")
+    return name
+
+def get_all_video_files(dir):
+    files = []
+    for root, dirs, filenames in os.walk(dir):
+        for filename in filenames:
+            if filename.endswith(".mkv") or filename.endswith(".mp4") or filename.endswith(".avi"):
+                files.append(os.path.join(root, filename))
+    return files
+
+def parse_args(argv):
+    f_in = []
+    f_out = []
     start = ""
     end = ""
     lang = []
@@ -71,20 +98,21 @@ def load_config(argv):
     crop = False
     multithread = False
     twopass = False
+    skip_existing = False
     if not 1 <= len(argv):
         print_usage(1)
 
     try:
-        opts, args = getopt.getopt(argv, "i:o:l:s:e:n:cmt",
+        opts, args = getopt.getopt(argv, "i:o:l:s:e:n:cmtk",
                                    ["in=", "out=", "lang=", "start=", "end=", "nice=", "crop", "multithread",
-                                    "twopass"])
+                                    "twopass", "skip_existing"])
     except getopt.GetoptError:
         print_usage(1)
     for opt, arg in opts:
         if opt in ("-i", "--in"):
-            f_in = str(arg)
+            f_in.append(str(arg))
         elif opt in ("-o", "--out"):
-            f_out = str(arg)
+            f_out.append(str(arg))
         elif opt in ("-l", "--lang"):
             lang = arg.lower().split(",")
         elif opt in ("-s", "--start"):
@@ -99,11 +127,20 @@ def load_config(argv):
             multithread = True
         elif opt in ("-t", "--twopass"):
             twopass = True
-    if f_in == "":
+        elif opt in ("-k", "--skip_existing"):
+            skip_existing = True
+    if len(f_in) == 0:
         print_usage(1)
-    if f_out == "":
-        f_out = os.path.splitext(f_in)[0] + ".webm"
-    return Config(f_in, f_out, start, end, lang, nice, crop, multithread, twopass)
+    if os.path.isdir(f_in[0]):
+        f_in = get_all_video_files(f_in[0])
+    if len(f_out) == 0:
+        f_out = [auto_name(i) for i in f_in]
+    if len(f_out) == 1 and os.path.splitext(f_out[0])[1] == "":
+        os.makedirs(f_out[0], exist_ok=True)
+        f_out = [os.path.join(f_out[0], auto_name(i)) for i in f_in]
+    elif len(f_out) != len(f_in):
+        print_usage(1)
+    return f_in, f_out, start, end, lang, nice, crop, multithread, twopass, skip_existing
 
 
 def load_metadata(f_in):
@@ -188,6 +225,11 @@ def compute_crop(nice, f_in):
 
 
 def encode(conf):
+    if os.path.exists(conf.f_out):
+        if conf.skip_existing:
+            print(f"> {conf.f_out} already exists, skipping...")
+            return
+
     print(f"> loading metadata...")
     meta = load_metadata(conf.f_in)
     print_metadata(meta)
@@ -242,10 +284,12 @@ def encode(conf):
 
 
 def main(argv):
-    conf = load_config(argv[1:])
-    print_config(conf)
-    encode(conf)
-
+    parsed_args = parse_args(argv[1:])
+    for i in range(len(parsed_args[0])):
+        print(f"> progress: [{i+1}/{len(parsed_args[0])}]")
+        conf = Config(i, parsed_args)
+        print_config(conf)
+        encode(conf)
 
 if __name__ == "__main__":
     main(sys.argv)
