@@ -77,7 +77,7 @@ class Metadata:
 
 def auto_name(f_in):
     name = os.path.splitext(f_in)[0] + ".webm"
-    name = os.path.basename(name).lower().replace(" ", "")
+    name = os.path.basename(name).lower().replace(" - ", "-").replace(" ", "")
     return name
 
 def get_all_video_files(dir):
